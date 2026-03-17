@@ -1,0 +1,22 @@
+Copyright (c) 2026 Masato Amano. All Rights Reserved.
+
+このリポジトリに含まれるすべてのコード、仕様、理論的記述は、
+特許出願中の知的財産を含みます。
+
+NOTICE:
+This repository contains intellectual property that is the subject
+of a pending patent application.
+
+PERMITTED:
+- Reading and referencing for academic/research purposes
+- Citing this work in academic papers (with attribution)
+- Discussing the theory and providing feedback via GitHub Issues
+
+NOT PERMITTED without explicit written permission:
+- Implementing the described protocol or algorithm
+- Redistributing any part of this repository
+- Commercial use of any kind
+- Creating derivative works
+
+For permissions, collaboration, or licensing inquiries:
+Please open a GitHub Issue or contact the author directly.
