@@ -124,7 +124,25 @@ dvscp-concept-en/
   dvscp_interface.py   <- Public interface definition (implementation not disclosed)
   LICENSE
 ```
+## Roadmap — Voice DVSCP (Next Generation)
 
+A next-generation version integrating audio dimensions is currently under development.
+
+| Axis | Description |
+|---|---|
+| PITCH | Fundamental frequency contour |
+| INTON | Intonation pattern |
+| EMOT | Emotional valence |
+| Inertia | Prosodic continuity (omitted when predictable) |
+
+**Expected improvement:** Voice DVSCP demonstrated compression of 1 minute of speech
+from ~1.9MB to 582B — a reduction exceeding 99%.
+
+The text DVSCP versions (Japanese / English / Chinese) form the semantic layer
+of this unified architecture. Voice DVSCP is the primary invention;
+text DVSCP serves as its complement.
+
+*Voice DVSCP — Patent Application Pending / M AI-studio*
 ---
 
 ## License
