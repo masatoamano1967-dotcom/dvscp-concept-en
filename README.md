@@ -1,103 +1,116 @@
-# DVSCP — Dimensional Vector Semantic Compression Protocol
+# DVSCP -- English Version
+## Dynamic Vector Semantic Compression Protocol
 
-**Author:** Masato Amano  
-**Status:** Concept Validation Phase — Patent Application Pending  
-**Version:** v5.1
-
----
-
-## Overview
-
-DVSCP is a proposed communication protocol that extracts only the "semantic core" from text, compresses it to a minimal representation, and relies on AI at the receiving end to reconstruct the original message.
-
-```
-[Original Text] → Semantic Extraction (Rule-based) → Compressed Packet → AI Reconstruction → [Restored Text]
-```
+**Author:** Masato Amano (M AI-studio)  
+**Status:** Patent Application Pending  
+**Version:** v1.0 / 2026-03-18
 
 > Japanese repository: [dvscp-concept-ja](https://github.com/masatoamano1967-dotcom/dvscp-concept-ja)
 
 ---
 
-## Core Ideas
+## Overview
+
+DVSCP is a communication protocol that extracts only the 'semantic skeleton' from text, compresses it into binary data, and delegates reconstruction to an AI on the receiving side.
+
+```
+[Original Text]
+    |
+    v (Rule-based, no AI)
+[Semantic Skeleton Packets]
+    |
+    v (Any LLM)
+[Reconstructed Text]
+```
+
+**Core principle:** Transmit only what the receiving AI cannot infer from context.
+
+---
+
+## Key Ideas
 
 ### Separation of Concerns
+- **Sender (Encoder):** Fully deterministic rule-based processing. No AI.
+- **Receiver (Decoder):** Any large language model reconstructs the message.
 
-- **Sender (Encoder):** No AI involved. Uses only deterministic rules to generate a semantic "seed."
-- **Receiver (Decoder):** Leverages a large language model to reconstruct the full message from the seed.
-
-This design means reconstruction quality improves automatically as AI models advance — with no changes needed to the encoder.
+This means reconstruction quality improves automatically as AI models advance -- with no changes to the encoder.
 
 ### Semantic Inertia
 
-Once a context (inertia) is established in a sentence, many subsequent words become predictable from it. DVSCP exploits this by **omitting information that can be inferred from inertia**.
+Once a context is established, subsequent words become predictable. DVSCP omits what the receiving AI can infer, transmitting only inertia breakpoints.
 
-> "At the moment a word is born, it already contains a direction toward the next word."
+> 'At the moment a word is born, it already contains a direction toward the next word.'
 
-### Three-tier Classification
+### Packet Structure
 
-| Class | Packet size | Target information |
+| Mode | Size | Content |
 |---|---|---|
-| **Anchor** | Several bytes | Inertia-breaking tokens (proper nouns, negations, pivots) |
-| **Inertia** | Minimal | Tokens predictable from current context |
-| **Skip** | 0 bytes | Grammatical elements AI can reconstruct |
+| V5 | 3 bytes | X + Y coordinates (WordNet synset) + SemanticByte |
+| V6X | 1 byte | SemanticByte only (out-of-vocabulary token) |
+| SKIP | 0 bytes | Omitted -- reconstructed from inertia |
+
+**SemanticByte** encodes TAG (role) and DIR (direction) in 5 bits:
+- TAG: SUBJ / VERB / OBJ / MOD / CONJ
+- DIR: Neutral / Inner / Outer / **Reversal** (negation -- always transmitted)
 
 ---
 
-## Benchmark Results
+## Benchmark Results (Measured / 2026-03-18)
 
-### English
+| # | Original text | Original | Compressed | Reduction |
+|---|---|---|---|---|
+| 1 | The scientist quietly made a groundbreaking discovery. | 54B | 15B | **72.2%** |
+| 2 | She smiled, but her eyes were filled with tears. | 48B | 15B | **68.8%** |
+| 3 | He never gave up, even when everything seemed hopeless. | 55B | 16B | **70.9%** |
+| 4 | The old man slowly walked along the river, remembering his youth. | 65B | 21B | **67.7%** |
+| 5 | Despite the danger, she stepped forward without hesitation. | 59B | 16B | **72.9%** |
+| **Total** | | **281B** | **83B** | **70.5%** |
 
-| Text type | Original | Compressed | Reduction |
-|---|---|---|---|
-| Narrative | 226 bytes | 85 bytes | **62.4%** |
-| Technical explanation | 290 bytes | 53 bytes | **81.7%** |
-| Negation + contrast | 181 bytes | 64 bytes | **64.6%** |
-| Technical (long) | 471 bytes | 67 bytes | **85.8%** |
-| **Total** | **1,168 bytes** | **269 bytes** | **77.0%** |
-
-### Japanese
-
-| Metric | Result |
-|---|---|
-| Original size | ~3,300–4,400 bytes |
-| Compressed size | 508–1,158 bytes |
-| **Reduction** | **77–85%** |
-| Core intent preservation | 100% (verified across 4 independent AI systems) |
-
-**Key finding:** English and Japanese compression ratios are comparable (~77%), suggesting semantic inertia is a **language-independent principle**.
-
-See [`examples/sample_results.md`](./examples/sample_results.md) for detailed examples.
+All results are measured from the working implementation using spaCy + WordNet.
 
 ---
 
-## Potential Applications
+## Multi-AI Reconstruction Test
 
-- **Low-bandwidth communication:** Space, underwater, disaster-response scenarios
-- **Storage:** Archiving large volumes of text as semantic skeletons
-- **Cross-language translation:** Natural multilingual reconstruction via semantic layer
-- **Voice extension:** Research ongoing into audio DVSCP integrating pitch, emotion, and intonation
+The same restoration prompt was submitted to three independent AI systems.
+
+| Test | ChatGPT | Gemini | Perplexity | Meaning | Emotion |
+|---|---|---|---|---|---|
+| 1 | A scientist quietly made a groundbreaking discovery. | The scientist quietly made a groundbreaking discovery. | The scientist quietly made a groundbreaking discovery. | OK | OK |
+| 2 | She smiled, but her eyes filled with tears. | They smiled, but their eyes filled with tears. | She smiled, but her eyes filled with tears. | OK | OK |
+| 3 | Never give up, even when things seem hopeless. | Never give up, even when it seems hopeless. | Never give up, even when everything seems hopeless. | OK | OK |
+| 4 | The old man slowly walked by the river, remembering his youth. | The old man walked slowly by the river, remembering his youth. | The old man walked slowly to the river, remembering his youth. | OK | OK |
+| 5 | Despite the danger, he stepped forward without hesitation. | Despite the danger, they stepped forward without hesitation. | Despite the danger, he stepped forward without hesitation. | OK | OK |
+
+**Meaning preserved: 5/5 | Emotion preserved: 5/5 | NEG/contrast preserved: 5/5**
+
+> Note: Subject gender (she/he/they) varies -- gender is not encoded by design.
+> Prepositions (along/by/to) vary within meaning-equivalent range -- by design.
+
+See [sample_results.md](./sample_results.md) for full detail.
 
 ---
 
 ## Guardrail Mechanisms
 
-Three safety mechanisms prevent meaning drift during compression:
-
-1. **Mandatory Anchor Protocol (MAP):** Forces an anchor token after a set number of consecutive inertia tokens, preventing semantic drift.
-2. **Uncertainty Echo (UE):** Allows the receiving AI to request retransmission if confidence falls below threshold — turning one-way transmission into a feedback loop.
-3. **Semantic Hash Verification (SHV):** Embeds a compact hash in each packet to detect and correct dictionary version mismatches between sender and receiver.
+1. **Mandatory Anchor Protocol (MAP):** Forces transmission after 5 consecutive skips.
+2. **Uncertainty Echo (UE):** Receiving AI requests retransmission if confidence is low.
+3. **Semantic Hash Verification (SHV):** Detects dictionary version mismatches.
 
 ---
 
-## Questions for Researchers
+## Comparison with Japanese Version
 
-Feedback on the following is most welcome:
+| Metric | English v1.0 | Japanese v5.1 |
+|---|---|---|
+| Tokenizer | spaCy (en_core_web_sm) | MeCab |
+| Coordinate system | WordNet synset ID | LaBSE + UMAP |
+| Average compression | **70.5%** | **77-85%** |
+| Meaning preservation | 5/5 (100%) | 100% |
+| Encoding | Rule-based, no AI | Rule-based, no AI |
 
-1. **Linguistics / Cognitive Science:** How does "semantic inertia" map to existing theories of language processing?
-2. **Information Theory:** What is the relationship between this approach and Shannon's framework?
-3. **Universality:** To what extent can a design based on morphological analysis generalize across typologically different languages?
-4. **Evaluation:** What metrics would best measure "semantic fidelity" in reconstruction?
-5. **Failure cases:** In what scenarios would this approach break down?
+Both versions achieve >70% compression with identical theoretical foundations,
+demonstrating that **semantic inertia is a language-independent principle**.
 
 ---
 
@@ -105,19 +118,18 @@ Feedback on the following is most welcome:
 
 ```
 dvscp-concept-en/
-├── README.md               ← This file
-├── THEORY.md               ← Theoretical background (concept level)
-├── LICENSE
-├── examples/
-│   └── sample_results.md   ← Reconstruction experiment examples
-└── interface/
-    └── dvscp_interface.py  ← Interface definition (no implementation)
+  README.md            <- This file
+  THEORY.md            <- Theoretical background
+  sample_results.md    <- Full reconstruction experiment results
+  dvscp_interface.py   <- Public interface definition (implementation not disclosed)
+  LICENSE
 ```
 
 ---
 
 ## License
 
-© 2026 Masato Amano. All Rights Reserved.  
+Copyright 2026 Masato Amano. All Rights Reserved.  
 This repository contains intellectual property subject to a pending patent application.  
-Reference for research purposes is permitted. Implementation or redistribution requires explicit written permission.
+Reference for research purposes is permitted.  
+Implementation or redistribution requires explicit written permission.
